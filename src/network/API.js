@@ -2,7 +2,7 @@
 import Cookies from "universal-cookie";
 
 class API {
-  static source = `https://working-day.online:8080/v1`;
+  static source = `https://working-day.su:8080/v1`;
   static cookies = new Cookies();
 
   constructor() {
@@ -424,28 +424,22 @@ class API {
       },
     });
   }
-  // static async addAttendance({ employee_id, start_date, end_date }) {
-  //   return await this.authFetch({
-  //     path: "/attendance/add",
-  //     method: "POST",
-  //     queries: {
-  //       employee_id: employee_id,
-  //     },
-  //     body: {
-  //       start_date: start_date,
-  //       end_date: end_date,
-  //     },
-  //   });
-  // }
 
-  // static async test({}) {
-  //   this.addEmployee({
-  //     name: "aaa",
-  //     surname: "bbb",
-  //     patronymic: "ccc",
-  //     role: "ddd",
-  //   });
-  // }
+  static async addInventoryItem({ name, description, employee_id }) {
+    return await this.authFetch({
+      path: "/inventory/add",
+      method: "POST",
+      body: {
+        item: {
+          name: name,
+          description: description,
+        },
+        employee_id: employee_id,
+      },
+    });
+  }
+
+  
 }
 
 export default API;

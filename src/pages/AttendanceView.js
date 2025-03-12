@@ -56,10 +56,18 @@ function AttendanceView() {
     pretime.attendances.forEach((element) => {
       emp[element.employee.id] = element.employee;
     });
-    setEmployees(emp);
+
+    const sortedEmployees = Object.values(emp).sort((a, b) => {
+      return a.surname.localeCompare(b.surname);
+    });
+    let sortedEmpMap = {};
+    sortedEmployees.forEach(emp => {
+      sortedEmpMap[emp.id] = emp;
+    });
+    setEmployees(sortedEmpMap);
     let ptime = {};
 
-    Object.values(emp).forEach((element) => {
+    sortedEmployees.forEach((element) => {
       let etime = {};
       for (
         let day = 1;
@@ -112,7 +120,7 @@ function AttendanceView() {
   const absenceTypeLabels = {
     vacation: "Отпуск",
     sick_leave: "Больничный",
-    unpaid_vacation: "Отпуск без оплаты",
+    unpaid_vacation: "Отпуск без содержания",
     business_trip: "Командировка",
     overtime: "Сверхурочные",
   };

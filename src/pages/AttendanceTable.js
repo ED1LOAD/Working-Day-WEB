@@ -81,6 +81,10 @@ function AttendanceTable() {
         uniqueIds.add(element.employee.id);
       }
     });
+
+    emp.sort((a, b) => {
+      return a.surname.localeCompare(b.surname);
+    });
     console.log("Unique employees:", emp);
     setEmployees(emp);
 
@@ -95,6 +99,7 @@ function AttendanceTable() {
         start: start,
         end: end,
         absense: end < start,
+        abscence_type: attendance.abscence_type,
       };
       ptime[element.id] = j;
     }
@@ -246,7 +251,7 @@ function AttendanceTable() {
                                       );
                                       return dayjs(x);
                                     })()}
-                                    disabled={time[emp.id].absense}
+                                    disabled={time[emp.id].absense || time[emp.id].abscence_type}
                                     onChange={(v) => setDuration(v, emp.id)}
                                     sx={{
                                       width: "150px",
@@ -283,6 +288,7 @@ function AttendanceTable() {
                                       <Checkbox
                                         checked={time[emp.id].absense}
                                         onChange={() => changeAbsense(emp.id)}
+                                        disabled={time[emp.id].abscence_type}
                                         sx={{
                                           color: "#164f94",
                                           '&.Mui-checked': {
@@ -299,6 +305,7 @@ function AttendanceTable() {
                                     variant="outlined"
                                     sx={{ borderColor: "#164f94", color: "#164f94" }}
                                     onClick={(e) => saveAttendance(e, emp.id)}
+                                    disabled={time[emp.id].abscence_type}
                                   >
                                     Сохранить
                                   </Button>

@@ -43,7 +43,7 @@ const CustomButton = styled(MUIButton)(({ theme }) => ({
 const absenceTypeLabels = {
   vacation: "отпуска",
   sick_leave: "больничного",
-  unpaid_vacation: "отпуска без оплаты",
+  unpaid_vacation: "отпуска без содержания",
   business_trip: "командировки",
   overtime: "сверхурочных"
 };
@@ -72,7 +72,6 @@ function AbsenceRequest() {
         alert("Выберите время начала и конца для сверхурочных");
         return;
       }
-      // Combine date and time for start and end
       const startDateTime = dayjs(startDate)
         .set('hour', startTime.hour())
         .set('minute', startTime.minute())
@@ -154,9 +153,9 @@ function AbsenceRequest() {
                 <Grid item xs={12} sm={6}>
                   <HoverableCard onClick={() => setAbsenceType("unpaid_vacation")}>
                     <CardContent>
-                      <Typography variant="h5">Отпуск без оплаты</Typography>
+                      <Typography variant="h5">Отпуск без содержания</Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Запрос на отпуск без оплаты
+                        Запрос на отпуск без содержания
                       </Typography>
                     </CardContent>
                   </HoverableCard>

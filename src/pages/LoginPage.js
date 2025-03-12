@@ -102,6 +102,10 @@ function LoginPage() {
     setShowPassword(!showPassword);
   };
 
+  const goToLandingPage = () => {
+    window.location.href = "https://xn----7sbdnfph9adr4f2c.xn--p1ai/";
+  };
+
   return (
     <div className="login-page">
       {Array.from({ length: 30 }).map((_, i) => (
@@ -150,6 +154,9 @@ function LoginPage() {
           </Form>
         </Card.Body>
       </Card>
+      <Button className="landing-button" variant="primary" onClick={goToLandingPage}>
+        Перейти на лендинг
+      </Button>
     </div>
   );
 }
