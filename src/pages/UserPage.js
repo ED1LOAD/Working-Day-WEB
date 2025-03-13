@@ -37,7 +37,6 @@ function UserPage({ get_id = useParams }) {
   const [itemDescription, setItemDescription] = useState("");
   const [selectedDescription, setSelectedDescription] = useState("");
 
-  // Обработчик добавления инвентаря
   const handleAddInventory = async () => {
     try {
       const result = await API.addInventoryItem({
@@ -109,6 +108,11 @@ function UserPage({ get_id = useParams }) {
                 </Col>
                 <Col className="user-page-col-padding">
                   <TitleField title="VK ID" value={optional(info.vk_id)} />
+                </Col>
+              </Row>
+              <Row>
+              <Col className="user-page-col-padding">
+                  <TitleField title="Должность" value={optional(info.job_position)} />
                 </Col>
               </Row>
 
@@ -214,7 +218,6 @@ function UserPage({ get_id = useParams }) {
         </Modal.Footer>
       </Modal>
 
-      {/* Модальное окно для отображения описания предмета */}
       <Modal show={showDescriptionModal} onHide={() => setShowDescriptionModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title>Описание предмета</Modal.Title>

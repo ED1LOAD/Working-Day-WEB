@@ -32,8 +32,8 @@ function UserAdd() {
   const [pretime, setPretime] = useState(null);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
   const [errors, setErrors] = useState({ name: false, surname: false, midname: false });
-
   const navigate = useNavigate();
+  const [job_position, setJobPosition] = useState("");
 
   useAsync(getJsonWithErrorHandlerFunc, setPretime, [
     (args) => API.listAllAttendance(args),
@@ -89,6 +89,7 @@ function UserAdd() {
       surname,
       patronymic: midname,
       role: employeeRole,
+      job_position: job_position,
     });
     let addresjson = await addres.json();
     setLogin(addresjson.login);
@@ -183,6 +184,14 @@ function UserAdd() {
                   </Select>
                 </FormControl>
               </Grid>
+              <Grid item xs={12} sm={6}>
+          <TextField
+            fullWidth
+            label="Должность"
+            variant="outlined"
+            onChange={(e) => setJobPosition(e.target.value)}
+          />
+        </Grid>
               <Grid item xs={12} sm={6}>
                 <FormControl fullWidth>
                   <InputLabel id="role-label">Роль</InputLabel>

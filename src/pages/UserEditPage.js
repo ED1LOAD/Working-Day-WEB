@@ -1,4 +1,5 @@
-import { Col, Container, Image, Row } from "react-bootstrap";
+import { Button, Col, Container, Image, Row } from "react-bootstrap";
+import TitleField from "../components/UserPage/TitleField";
 import LeftPanel from "../components/LeftPanel/LeftPanel";
 import TopPanel from "../components/TopPanel/TopPanel";
 import "../styles/usereditpage.css";
@@ -12,9 +13,12 @@ import { useNavigate, useParams } from "react-router-dom";
 import optional from "../functions/optional";
 import convertNull from "../functions/convertNull";
 import EditIcon from '@mui/icons-material/Edit';
+import getCachedRole from "../functions/getCachedRole";
+
 
 function UserEditPage({ get_id = useParams }) {
   const { id } = get_id();
+  const my_role = getCachedRole();
   const navigate = useNavigate();
   const [info, setInfo] = useState(null);
   useAsync(getJsonWithErrorHandlerFunc, setInfo, [
@@ -28,6 +32,7 @@ function UserEditPage({ get_id = useParams }) {
   const [telegram_id, setTelegramId] = useState("");
   const [vk_id, setVkId] = useState("");
   const [photoData, setPhotoData] = useState("");
+  const [job_position, setJobPosition] = useState("");
 
   const photo_input = useRef(null);
 
@@ -40,34 +45,42 @@ function UserEditPage({ get_id = useParams }) {
     setPhone(optional(info.phones, optional(info.phones[0])));
     setTelegramId(optional(info.telegram_id));
     setVkId(optional(info.vk_id));
+    setJobPosition(optional(info.job_position) || "");
   }, [info]);
 
   async function onClick(event) {
     event.preventDefault();
-    let resphoto;
-    if (photoData) {
-      let url = (await (await API.uploadPhotoProfile()).json()).url;
-      let file = new File([photoData], "image.jpg");
-      resphoto = await API.xfetch({
-        path: url,
-        isabsolute: true,
-        method: "PUT",
-        body: file,
-        bodyisjson: false,
-      });
-    }
+  
+    console.log("Отправляемая должность:", job_position || "Пустая строка");
+  
     let resdata = await API.editProfile({
       phones: optional(phone, [phone], []),
       email: convertNull(email),
       birthday: convertNull(birthday),
       telegram_id: convertNull(telegram_id),
       vk_id: convertNull(vk_id),
+      job_position: convertNull(job_position),
     });
-    if (!resdata.ok || (photoData && !resphoto.ok)) {
-      alert("Не удалось обновить информацию");
+  
+    let responseText = await resdata.text();
+    console.log("Ответ от сервера (text):", responseText);
+  
+    if (!resdata.ok) {
+      console.error("Ошибка API, статус:", resdata.status);
+      alert("Ошибка при сохранении данных: " + responseText);
+      return;
     }
+  
+    try {
+      let jsonResponse = JSON.parse(responseText);
+      console.log("Парсинг JSON:", jsonResponse);
+    } catch (error) {
+      console.error("Ошибка парсинга JSON, сервер вернул:", responseText);
+    }
+  
     navigate("./..");
   }
+  
 
   const readPhoto = (e) => {
     let files = e.target.files;
@@ -161,6 +174,22 @@ function UserEditPage({ get_id = useParams }) {
                     pattern="\+[0-9]{1,3} [0-9]{3} [0-9]{3} [0-9]{4}"
                     defaultValue={optional(info.phones, info.phones[0])}
                     onChange={(e) => setPhone(e.target.value)}
+                  />
+                </Col>
+              </Row>
+              <Row>
+              <Col className="form-col">
+                  <label className="edit-label" for="job_position">
+                    Должность
+                  </label>
+                  <br />
+                  <input
+                    className="edit-input"
+                    type="text"
+                    id="job_position"
+                    name="job_position"
+                    defaultValue={optional(info.job_position)}
+                    onChange={(e) => setJobPosition(e.target.value)}
                   />
                 </Col>
               </Row>

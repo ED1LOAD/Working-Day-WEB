@@ -88,7 +88,7 @@ class API {
     return await this.authFetch({ path: "/employees" });
   }
 
-  static async addEmployee({ name, surname, patronymic, role }) {
+  static async addEmployee({ name, surname, patronymic, role, job_position }) {
     return await this.authFetch({
       path: "/employee/add",
       method: "POST",
@@ -97,6 +97,7 @@ class API {
         surname: surname,
         patronymic: patronymic,
         role: role,
+        job_position: job_position,
       },
     });
   }
@@ -148,6 +149,7 @@ class API {
     telegram_id,
     vk_id,
     team,
+    job_position,
   }) {
     return await this.authFetch({
       path: "/profile/edit",
@@ -160,6 +162,7 @@ class API {
         telegram_id: telegram_id,
         vk_id: vk_id,
         team: team,
+        job_position: job_position,
       },
     });
   }
