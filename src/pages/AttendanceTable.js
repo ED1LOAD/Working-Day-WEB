@@ -20,7 +20,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import "dayjs/locale/ru"; 
 import { useEffect, useState } from "react";
-import { Col, Container, Row } from "react-bootstrap";
+import { Container, Row, Col } from "react-bootstrap";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import optional from "../functions/optional";
 import { addDays, subDays } from "date-fns";
@@ -33,7 +33,7 @@ import LeftPanel from "../components/LeftPanel/LeftPanel";
 import TopPanel from "../components/TopPanel/TopPanel";
 import "../styles/attendance.css";
 
-dayjs.locale("ru"); 
+dayjs.locale("ru");
 
 const theme = createTheme({
   palette: {
@@ -45,7 +45,6 @@ const theme = createTheme({
 
 function AttendanceTable() {
   const initialDate = new Date().setHours(0, 0, 0, 0);
-
   const [date, setDate] = useState(initialDate);
   const [employees, setEmployees] = useState([]);
   const [time, setTime] = useState({});
@@ -70,69 +69,83 @@ function AttendanceTable() {
     if (pretime === null) return;
     if (Object.keys(time).length !== 0) return;
 
-    console.log("Processing attendance records:", pretime.attendances);
-
     let emp = [];
     let uniqueIds = new Set();
     pretime.attendances.forEach((element) => {
-      console.log("Processing employee:", element.employee);
       if (!uniqueIds.has(element.employee.id)) {
         emp.push(element.employee);
         uniqueIds.add(element.employee.id);
       }
     });
 
-    emp.sort((a, b) => {
-      return a.surname.localeCompare(b.surname);
-    });
-    console.log("Unique employees:", emp);
+    emp.sort((a, b) => a.surname.localeCompare(b.surname));
     setEmployees(emp);
 
     let ptime = {};
-    for (let index = 0; index < emp.length; index++) {
-      const element = emp[index];
-      let attendance = pretime.attendances.find((item) => item.employee.id === element.id);
+    emp.forEach((element) => {
+      let attendance = pretime.attendances.find(
+        (item) => item.employee.id === element.id
+      );
       let start = new Date(Date.parse(attendance.start_date));
       let end = new Date(Date.parse(attendance.end_date));
-
-      let j = {
-        start: start,
-        end: end,
+      ptime[element.id] = {
+        start,
+        end,
         absense: end < start,
         abscence_type: attendance.abscence_type,
+        mode: "duration", 
       };
-      ptime[element.id] = j;
-    }
-    console.log("Processed time data:", ptime);
+    });
     setTime(ptime);
   }, [pretime, time]);
 
+  function toggleMode(emp_id) {
+    setTime((prev) => {
+      const currentMode = prev[emp_id].mode;
+      const newMode = currentMode === "duration" ? "shift" : "duration";
+      return {
+        ...prev,
+        [emp_id]: {
+          ...prev[emp_id],
+          mode: newMode,
+        },
+      };
+    });
+  }
+
   function setStart(v, emp_id) {
     let d = new Date(v);
-    time[emp_id].start = new Date(
-      new Date(date).setHours(d.getHours(), d.getMinutes())
-    );
+    const newStart = new Date(new Date(date).setHours(d.getHours(), d.getMinutes()));
+    setTime((prevTime) => ({
+      ...prevTime,
+      [emp_id]: { ...prevTime[emp_id], start: newStart },
+    }));
   }
 
   function setEnd(v, emp_id) {
     let d = new Date(v);
-    time[emp_id].end = new Date(
-      new Date(date).setHours(d.getHours(), d.getMinutes())
-    );
+    const newEnd = new Date(new Date(date).setHours(d.getHours(), d.getMinutes()));
+    setTime((prevTime) => ({
+      ...prevTime,
+      [emp_id]: { ...prevTime[emp_id], end: newEnd },
+    }));
   }
 
   function setDuration(v, emp_id) {
     let d = new Date(v);
-    time[emp_id].start = new Date(new Date(date).setHours(9, 0, 0));
-    time[emp_id].end = new Date(
-      new Date(date).setHours(9 + d.getHours(), d.getMinutes())
-    );
+    const newStart = new Date(new Date(date).setHours(9, 0, 0));
+    const newEnd = new Date(new Date(date).setHours(9 + d.getHours(), d.getMinutes()));
+    setTime((prevTime) => ({
+      ...prevTime,
+      [emp_id]: { ...prevTime[emp_id], start: newStart, end: newEnd },
+    }));
   }
 
   function changeAbsense(emp_id) {
-    let ntime = { ...time };
-    ntime[emp_id].absense = !ntime[emp_id].absense;
-    setTime(ntime);
+    setTime((prevTime) => ({
+      ...prevTime,
+      [emp_id]: { ...prevTime[emp_id], absense: !prevTime[emp_id].absense },
+    }));
   }
 
   async function markAll(e) {
@@ -147,16 +160,14 @@ function AttendanceTable() {
   async function saveAttendance(e, emp_id) {
     await API.addAttendance({
       employee_id: emp_id,
-      start_date: formatDate(
-        time[emp_id].absense ? date : time[emp_id].start
-      ),
-      end_date: formatDate(
-        time[emp_id].absense ? subDays(date, 1) : time[emp_id].end
-      ),
+      start_date: formatDate(time[emp_id].absense ? date : time[emp_id].start),
+      end_date: formatDate(time[emp_id].absense ? subDays(date, 1) : time[emp_id].end),
     });
 
     const duration = ((time[emp_id].end - time[emp_id].start) / (1000 * 60 * 60)).toFixed(2);
-    setSnackbarMessage(`Посещение для ${employees.find(emp => emp.id === emp_id).name} сохранено. Время: ${duration} часов`);
+    setSnackbarMessage(
+      `Посещение для ${employees.find((emp) => emp.id === emp_id).name} сохранено. Время: ${duration} часов`
+    );
     setSnackbarOpen(true);
   }
 
@@ -191,15 +202,19 @@ function AttendanceTable() {
                   defaultValue={dayjs(date)}
                   sx={{ marginLeft: "15px" }}
                   onChange={(v) => {
-                    const date = new Date(v);
+                    const newDate = new Date(v);
                     setPretime(null);
                     setTime({});
-                    setDate(date);
+                    setDate(newDate);
                   }}
                 />
                 <Button
                   variant="contained"
-                  sx={{ backgroundColor: "#164f94", color: "#ffffff", marginLeft: "15px" }}
+                  sx={{
+                    backgroundColor: "#164f94",
+                    color: "#ffffff",
+                    marginLeft: "15px",
+                  }}
                   onClick={(e) => markAll(e)}
                 >
                   Проставить всем
@@ -213,6 +228,9 @@ function AttendanceTable() {
                         <Typography variant="subtitle1">ФИО</Typography>
                       </TableCell>
                       <TableCell>
+                        <Typography variant="subtitle1">Время</Typography>
+                      </TableCell>
+                      <TableCell>
                         <Typography variant="subtitle1">Статус</Typography>
                       </TableCell>
                     </TableRow>
@@ -220,7 +238,7 @@ function AttendanceTable() {
                   <TableBody>
                     {!time || Object.keys(time).length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={2}>
+                        <TableCell colSpan={3}>
                           <Typography variant="body1" align="center">
                             Нет данных для отображения
                           </Typography>
@@ -235,83 +253,92 @@ function AttendanceTable() {
                             </Typography>
                           </TableCell>
                           <TableCell>
-                            <Container>
-                              <Row className="attendancetable-status-row">
-                                <Col>
+                            <Box display="flex" alignItems="center" gap={2}>
+                              <Box style={{ minWidth: "300px" }}>
+                                {time[emp.id].mode === "duration" ? (
                                   <TimePicker
                                     ampm={false}
+                                    label="Часы"
                                     value={(() => {
-                                      let delta =
-                                        time[emp.id].end - time[emp.id].start;
+                                      let delta = time[emp.id].end - time[emp.id].start;
                                       let minutes = (delta % 3600000) / 60000;
-                                      let hours =
-                                        (delta - (delta % 3600000)) / 3600000;
-                                      let x = new Date(
-                                        new Date(date).setHours(hours, minutes)
-                                      );
+                                      let hours = Math.floor(delta / 3600000);
+                                      let x = new Date(new Date(date).setHours(hours, minutes));
                                       return dayjs(x);
                                     })()}
-                                    disabled={time[emp.id].absense || time[emp.id].abscence_type}
                                     onChange={(v) => setDuration(v, emp.id)}
+                                    disabled={time[emp.id].absense || time[emp.id].abscence_type}
                                     sx={{
-                                      width: "150px",
-                                      '& .MuiInputBase-input': {
-                                        color: "#164f94",
-                                      },
-                                      '& .MuiPickersToolbar-root': {
-                                        backgroundColor: "#164f94",
-                                      },
-                                      '& .MuiButtonBase-root.MuiPickersDay-daySelected': {
-                                        backgroundColor: "#164f94",
-                                      },
-                                      '& .MuiButtonBase-root.MuiPickersDay-daySelected:hover': {
-                                        backgroundColor: "#164f94",
-                                      },
-                                      '& .MuiButtonBase-root.MuiPickersDay-today': {
-                                        borderColor: "#164f94",
-                                      },
-                                      '& .MuiClock-circle': {
-                                        backgroundColor: "#164f94",
-                                      },
-                                      '& .MuiClockPointer-root': {
-                                        backgroundColor: "#164f94",
-                                      },
-                                      '& .MuiButtonBase-root.MuiPickersDay-today': {
+                                      width: "140px",
+                                      "& .MuiInputBase-input": {
                                         color: "#164f94",
                                       },
                                     }}
                                   />
-                                </Col>
-                                <Col>
-                                  <FormControlLabel
-                                    control={
-                                      <Checkbox
-                                        checked={time[emp.id].absense}
-                                        onChange={() => changeAbsense(emp.id)}
-                                        disabled={time[emp.id].abscence_type}
-                                        sx={{
-                                          color: "#164f94",
-                                          '&.Mui-checked': {
-                                            color: "#164f94",
-                                          },
-                                        }}
-                                      />
-                                    }
-                                    label="Отсутствие"
-                                  />
-                                </Col>
-                                <Col>
-                                  <Button
-                                    variant="outlined"
-                                    sx={{ borderColor: "#164f94", color: "#164f94" }}
-                                    onClick={(e) => saveAttendance(e, emp.id)}
+                                ) : (
+                                  <div style={{ display: "flex", gap: "5px" }}>
+                                    <TimePicker
+                                      label="Начало"
+                                      ampm={false}
+                                      value={dayjs(time[emp.id].start)}
+                                      onChange={(v) => setStart(v, emp.id)}
+                                      disabled={time[emp.id].absense || time[emp.id].abscence_type}
+                                      sx={{ width: "140px" }}
+                                    />
+                                    <TimePicker
+                                      label="Конец"
+                                      ampm={false}
+                                      value={dayjs(time[emp.id].end)}
+                                      onChange={(v) => setEnd(v, emp.id)}
+                                      disabled={time[emp.id].absense || time[emp.id].abscence_type}
+                                      sx={{ width: "140px" }}
+                                    />
+                                  </div>
+                                )}
+                              </Box>
+                              <Button
+                                variant="outlined"
+                                sx={{
+                                  borderColor: "#164f94",
+                                  color: "#164f94",
+                                }}
+                                onClick={() => toggleMode(emp.id)}
+                                disabled={time[emp.id].abscence_type}
+                              >
+                                {time[emp.id].mode === "duration" ? "Смена" : "Назад"}
+                              </Button>
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <FormControlLabel
+                                control={
+                                  <Checkbox
+                                    checked={time[emp.id].absense}
+                                    onChange={() => changeAbsense(emp.id)}
                                     disabled={time[emp.id].abscence_type}
-                                  >
-                                    Сохранить
-                                  </Button>
-                                </Col>
-                              </Row>
-                            </Container>
+                                    sx={{
+                                      color: "#164f94",
+                                      "&.Mui-checked": {
+                                        color: "#164f94",
+                                      },
+                                    }}
+                                  />
+                                }
+                                label="Отсутствие"
+                              />
+                              <Button
+                                variant="outlined"
+                                sx={{
+                                  borderColor: "#164f94",
+                                  color: "#164f94",
+                                }}
+                                onClick={(e) => saveAttendance(e, emp.id)}
+                                disabled={time[emp.id].abscence_type}
+                              >
+                                Сохранить
+                              </Button>
+                            </Box>
                           </TableCell>
                         </TableRow>
                       ))
@@ -324,7 +351,7 @@ function AttendanceTable() {
                 autoHideDuration={6000}
                 onClose={handleCloseSnackbar}
               >
-                <Alert onClose={handleCloseSnackbar} severity="success" sx={{ width: '100%' }}>
+                <Alert onClose={handleCloseSnackbar} severity="success" sx={{ width: "100%" }}>
                   {snackbarMessage}
                 </Alert>
               </Snackbar>
