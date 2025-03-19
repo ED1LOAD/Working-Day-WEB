@@ -39,11 +39,7 @@ class API {
     body,
     bodyisjson = true,
   }) {
-    console.log("XFETCH PATH: " + path);
-    console.log("THIS.SOURCE: " + this.source);
-    // console.log("SOURCE: " + source);
-    console.log("XFETCH BODY: " + body);
-    console.log(body);
+
     return await fetch(
       this.formatQuery(isabsolute ? path : this.source + path, queries),
       {
@@ -67,9 +63,7 @@ class API {
     body,
     bodyisjson = true,
   }) {
-    console.log("AUTHFETCH PATH");
-    console.log(path);
-    // console.log();
+
     return await this.xfetch({
       path: path,
       isabsolute: isabsolute,

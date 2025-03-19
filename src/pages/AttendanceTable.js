@@ -20,7 +20,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import "dayjs/locale/ru"; 
 import { useEffect, useState } from "react";
-import { Container, Row, Col } from "react-bootstrap";
+import { Col, Container, Row } from "react-bootstrap";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import optional from "../functions/optional";
 import { addDays, subDays } from "date-fns";
@@ -93,7 +93,7 @@ function AttendanceTable() {
         end,
         absense: end < start,
         abscence_type: attendance.abscence_type,
-        mode: "duration", 
+        mode: "duration", // Добавляем режим по умолчанию
       };
     });
     setTime(ptime);
@@ -133,12 +133,10 @@ function AttendanceTable() {
 
   function setDuration(v, emp_id) {
     let d = new Date(v);
-    const newStart = new Date(new Date(date).setHours(9, 0, 0));
-    const newEnd = new Date(new Date(date).setHours(9 + d.getHours(), d.getMinutes()));
-    setTime((prevTime) => ({
-      ...prevTime,
-      [emp_id]: { ...prevTime[emp_id], start: newStart, end: newEnd },
-    }));
+    time[emp_id].start = new Date(new Date(date).setHours(9, 0, 0));
+    time[emp_id].end = new Date(
+      new Date(date).setHours(9 + d.getHours(), d.getMinutes())
+    );
   }
 
   function changeAbsense(emp_id) {

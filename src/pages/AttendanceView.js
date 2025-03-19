@@ -217,20 +217,33 @@ function AttendanceView() {
                             }
                           >
                             <Typography variant="body1">
-                              {time[emp.id][day]["absense"]
-                                ? time[emp.id][day]["absense"] === 'overtime'
-                                  ? calculateOvertime(time[emp.id][day]["end"] - time[emp.id][day]["start"])
-                                  : absenceTypeLabels[time[emp.id][day]["absense"]]
-                                : (() => {
-                                    let delta = time[emp.id][day]["end"] - time[emp.id][day]["start"];
-                                    if (delta === 0) {
-                                      return "";
-                                    }
-                                    let minutes = (delta % 3600000) / 60000;
-                                    let hours = (delta - (delta % 3600000)) / 3600000;
-                                    return hours.toString() + ":" + (minutes < 10 ? "0" + minutes.toString() : minutes.toString());
-                                  })()}
-                            </Typography>
+                                {time[emp.id][day]["absense"]
+                                  ? time[emp.id][day]["absense"] === 'overtime'
+                                    ? calculateOvertime(time[emp.id][day]["end"] - time[emp.id][day]["start"])
+                                    : absenceTypeLabels[time[emp.id][day]["absense"]] || "Н"
+                                  : (() => {
+                                      let delta = time[emp.id][day]["end"] - time[emp.id][day]["start"];
+                                      if (delta <= 0) {
+                                        return ""; 
+                                      }
+
+                                      let minutes = (delta % 3600000) / 60000;
+                                      let hours = (delta - (delta % 3600000)) / 3600000;
+
+                                      if (time[emp.id][day]["abscence_type"] === 'overtime') {
+                                        const standardHours = 8;
+                                        const standardMillis = standardHours * 3600000;
+                                        const overtimeMillis = delta - standardMillis;
+
+                                        const overtimeHours = Math.floor(overtimeMillis / 3600000);
+                                        const overtimeMinutes = Math.floor((overtimeMillis % 3600000) / 60000);
+
+                                        return `8:00 + ${overtimeHours}:${overtimeMinutes < 10 ? '0' + overtimeMinutes : overtimeMinutes} сверхурочные`;
+                                      } else {
+                                        return `${hours}:${minutes < 10 ? '0' + minutes : minutes}`;
+                                      }
+                                    })()}
+                              </Typography>
                           </TableCell>
                         ))
                       )}
