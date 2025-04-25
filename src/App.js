@@ -6,8 +6,6 @@ import logo from "./logo.svg";
 import "./App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
-import UserTestPage from "./pages/UserTestPage";
-import AutoLayoutExample from "./pages/TEST";
 import UserPage from "./pages/UserPage";
 import UserEditPage from "./pages/UserEditPage";
 import Notifications from "./pages/Notifications";

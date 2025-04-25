@@ -13,7 +13,7 @@ import { DatePicker, LocalizationProvider, TimePicker } from "@mui/x-date-picker
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import "dayjs/locale/ru";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import API from "../network/API";
 import formatDate from "../functions/formatDate";
 import LeftPanel from "../components/LeftPanel/LeftPanel";
@@ -45,7 +45,8 @@ const absenceTypeLabels = {
   sick_leave: "больничного",
   unpaid_vacation: "отпуска без содержания",
   business_trip: "командировки",
-  overtime: "сверхурочных"
+  overtime: "сверхурочных",
+  other: "другого заявления"
 };
 
 function AbsenceRequest() {
@@ -54,76 +55,95 @@ function AbsenceRequest() {
   const [absenceType, setAbsenceType] = useState(null);
   const [startTime, setStartTime] = useState(null);
   const [endTime, setEndTime] = useState(null);
+  const [otherTitle, setOtherTitle] = useState("");
+  const [otherDescription, setOtherDescription] = useState("");
+  const otherDocRef = useRef(null);
+  const [otherDocName, setOtherDocName] = useState(null);
+  const [otherDocData, setOtherDocData] = useState(null);
+
+  const my_id = getCachedLogin();
+  const [myInfo, setMyInfo] = useState(null);
+  useAsync(getJsonWithErrorHandlerFunc, setMyInfo, [() => API.infoEmployee(my_id), [my_id]]);
+
+  function handleOtherFileChange(e) {
+    let file = e.target.files[0];
+    setOtherDocName(file.name);
+    let reader = new FileReader();
+    reader.readAsArrayBuffer(file);
+    reader.onload = (e) => {
+      setOtherDocData(e.target.result);
+    };
+  }
+
+  async function handleOtherSubmit() {
+    if (!otherDocData || !otherTitle) {
+      alert("Заполните название и выберите документ");
+      return;
+    }
+    const upload = await getJsonWithErrorHandlerFunc(() => API.uploadDocuments(), []);
+    await API.xfetch({
+      path: upload.url,
+      isabsolute: true,
+      method: "PUT",
+      body: new File([otherDocData], otherDocName),
+      bodyisjson: false
+    });
+    const send = await API.sendDocuments({
+      doc_id: upload.id,
+      doc_name: otherTitle,
+      doc_description: otherDescription,
+      employee_ids: [my_id],
+      doc_sign_required: true
+    });
+    if (send && send.ok) {
+      alert("Документ отправлен");
+      setAbsenceType(null);
+      setOtherDocData(null);
+      setOtherDocName(null);
+      setOtherTitle("");
+      setOtherDescription("");
+    } else {
+      alert("Не удалось отправить документ");
+    }
+  }
 
   async function sendRequest() {
     if (!startDate || (!endDate && absenceType !== "overtime") || !absenceType) {
       alert("Заполните все поля");
       return;
     }
-
     const requestData = {
       start_date: formatDate(startDate.toDate()),
       end_date: absenceType === "overtime" ? formatDate(startDate.toDate()) : formatDate(endDate.toDate()),
       type: absenceType,
     };
-
     if (absenceType === "overtime") {
       if (!startTime || !endTime) {
         alert("Выберите время начала и конца для сверхурочных");
         return;
       }
-      const startDateTime = dayjs(startDate)
-        .set('hour', startTime.hour())
-        .set('minute', startTime.minute())
-        .set('second', startTime.second())
-        .set('millisecond', startTime.millisecond());
-      const endDateTime = dayjs(startDate)
-        .set('hour', endTime.hour())
-        .set('minute', endTime.minute())
-        .set('second', endTime.second())
-        .set('millisecond', endTime.millisecond());
-
-      requestData.start_date = formatDate(startDateTime.toDate());
-      requestData.end_date = formatDate(endDateTime.toDate());
+      requestData.start_date = formatDate(dayjs(startDate).set('hour', startTime.hour()).set('minute', startTime.minute()).toDate());
+      requestData.end_date = formatDate(dayjs(startDate).set('hour', endTime.hour()).set('minute', endTime.minute()).toDate());
     }
-
-    try {
-      let res = await API.requestAbsence(requestData);
-      if (res && res.ok) {
-        alert("Запрос отправлен");
-      } else {
-        alert("Не удалось запросить отсутствие");
-      }
-    } catch (error) {
-      alert("Произошла ошибка при отправке запроса");
+    const res = await API.requestAbsence(requestData);
+    if (res && res.ok) {
+      alert("Запрос отправлен");
+      setAbsenceType(null);
+      setStartDate(null);
+      setEndDate(null);
+      setStartTime(null);
+      setEndTime(null);
+    } else {
+      alert("Ошибка отправки запроса");
     }
   }
-
-  const my_id = getCachedLogin();
-  const [myInfo, setMyInfo] = useState(null);
-  useAsync(getJsonWithErrorHandlerFunc, setMyInfo, [
-    (args) => API.infoEmployee(args),
-    [my_id],
-  ]);
 
   return !myInfo ? null : (
     <Box display="flex" minHeight="100vh">
       <LeftPanel highlight="absenserequest" />
       <Box flexGrow={1} display="flex" flexDirection="column">
-        <TopPanel
-          title="Запросы"
-          profpic={myInfo.photo_link}
-          showfunctions={false}
-          username={myInfo.name}
-        />
-        <Box
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
-          flexGrow={1}
-          padding={2}
-          sx={{ overflow: "auto" }}
-        >
+        <TopPanel title="Запросы" profpic={myInfo.photo_link} showfunctions={false} username={myInfo.name} />
+        <Box display="flex" justifyContent="center" alignItems="center" flexGrow={1} padding={2} sx={{ overflow: "auto" }}>
           <MUIContainer maxWidth="md" sx={{ minHeight: "500px" }}>
             <Typography variant="h4" gutterBottom>
               {absenceType ? `Выбор даты для ${absenceTypeLabels[absenceType]}` : 'Выберите запрос'}
@@ -131,121 +151,91 @@ function AbsenceRequest() {
             {!absenceType ? (
               <Grid container spacing={4}>
                 <Grid item xs={12} sm={6}>
-                  <HoverableCard onClick={() => setAbsenceType("vacation")}>
-                    <CardContent>
-                      <Typography variant="h5">Отпуск</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Запрос на отпуск
-                      </Typography>
-                    </CardContent>
-                  </HoverableCard>
+                  <HoverableCard onClick={() => setAbsenceType("vacation")}> <CardContent><Typography variant="h5">Отпуск</Typography></CardContent></HoverableCard>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <HoverableCard onClick={() => setAbsenceType("sick_leave")}>
-                    <CardContent>
-                      <Typography variant="h5">Больничный</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Запрос на больничный
-                      </Typography>
-                    </CardContent>
-                  </HoverableCard>
+                  <HoverableCard onClick={() => setAbsenceType("unpaid_vacation")}> <CardContent><Typography variant="h5">Отпуск без содержания</Typography></CardContent></HoverableCard>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <HoverableCard onClick={() => setAbsenceType("unpaid_vacation")}>
-                    <CardContent>
-                      <Typography variant="h5">Отпуск без содержания</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Запрос на отпуск без содержания
-                      </Typography>
-                    </CardContent>
-                  </HoverableCard>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <HoverableCard onClick={() => setAbsenceType("business_trip")}>
-                    <CardContent>
-                      <Typography variant="h5">Командировка</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Запрос на командировку
-                      </Typography>
-                    </CardContent>
-                  </HoverableCard>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <HoverableCard onClick={() => setAbsenceType("overtime")}>
-                    <CardContent>
-                      <Typography variant="h5">Сверхурочные</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Запрос на сверхурочные
-                      </Typography>
-                    </CardContent>
-                  </HoverableCard>
+                  <HoverableCard onClick={() => setAbsenceType("other")}> <CardContent><Typography variant="h5">Другое заявление</Typography></CardContent></HoverableCard>
                 </Grid>
               </Grid>
+            ) : absenceType === "other" ? (
+              <Box mt={4}>
+  <TextField
+    fullWidth
+    label="Название"
+    value={otherTitle}
+    onChange={(e) => setOtherTitle(e.target.value)}
+    sx={{ mt: 2 }}
+  />
+  <TextField
+    fullWidth
+    label="Описание"
+    value={otherDescription}
+    onChange={(e) => setOtherDescription(e.target.value)}
+    multiline
+    rows={4}
+    sx={{ mt: 2 }}
+  />
+
+  <input
+    type="file"
+    ref={otherDocRef}
+    style={{ display: "none" }}
+    onChange={handleOtherFileChange}
+  />
+
+  <Box display="flex" alignItems="center" mt={2} gap={2}>
+    <CustomButton
+      variant="outlined"
+      onClick={() => otherDocRef.current.click()}
+      sx={{ flexGrow: 1 }}
+    >
+      {otherDocName || 'Выбрать документ'}
+    </CustomButton>
+    <Typography variant="body2" color="textSecondary">
+      {otherDocName && "Файл выбран"}
+    </Typography>
+  </Box>
+
+  <Box mt={4} display="flex" justifyContent="flex-end" gap={2}>
+    <CustomButton
+      variant="contained"
+      onClick={handleOtherSubmit}
+      sx={{ backgroundColor: '#164f94', "&:hover": { backgroundColor: "#133a6c" } }}
+    >
+      Отправить
+    </CustomButton>
+    <CustomButton
+      variant="outlined"
+      color="error"
+      onClick={() => setAbsenceType(null)}
+    >
+      Отмена
+    </CustomButton>
+  </Box>
+</Box>
+
             ) : (
               <Box mt={4}>
                 <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ru">
                   <Grid container spacing={2}>
-                    <Grid item xs={12}>
-                      <DatePicker
-                        format="DD.MM.YYYY"
-                        slotProps={{ textField: { placeholder: "Дата" } }}
-                        onChange={(v) => setStartDate(dayjs(v))}
-                        sx={{ width: '100%' }}
-                      />
-                    </Grid>
+                    <Grid item xs={12}><DatePicker format="DD.MM.YYYY" onChange={(v) => setStartDate(dayjs(v))} sx={{ width: '100%' }} /></Grid>
                     {absenceType === "overtime" && (
-                      <Grid item xs={12}>
-                        <Grid container spacing={2}>
-                          <Grid item xs={6}>
-                            <TimePicker
-                              label="Время начала"
-                              value={startTime}
-                              onChange={(v) => setStartTime(dayjs(v))}
-                              renderInput={(params) => <TextField {...params} fullWidth />}
-                            />
-                          </Grid>
-                          <Grid item xs={6}>
-                            <TimePicker
-                              label="Время конца"
-                              value={endTime}
-                              onChange={(v) => setEndTime(dayjs(v))}
-                              renderInput={(params) => <TextField {...params} fullWidth />}
-                            />
-                          </Grid>
-                        </Grid>
+                      <Grid item xs={12} container spacing={2}>
+                        <Grid item xs={6}><TimePicker label="Время начала" value={startTime} onChange={(v) => setStartTime(dayjs(v))} /></Grid>
+                        <Grid item xs={6}><TimePicker label="Время конца" value={endTime} onChange={(v) => setEndTime(dayjs(v))} /></Grid>
                       </Grid>
                     )}
                     {absenceType !== "overtime" && (
-                      <Grid item xs={12}>
-                        <DatePicker
-                          format="DD.MM.YYYY"
-                          slotProps={{ textField: { placeholder: "Конец" } }}
-                          onChange={(v) => setEndDate(dayjs(v))}
-                          sx={{ width: '100%' }}
-                        />
-                      </Grid>
+                      <Grid item xs={12}><DatePicker format="DD.MM.YYYY" onChange={(v) => setEndDate(dayjs(v))} sx={{ width: '100%' }} /></Grid>
                     )}
                   </Grid>
                 </LocalizationProvider>
                 <Box mt={2} display="flex" justifyContent="center">
-                  <CustomButton
-                    variant="contained"
-                    color="primary"
-                    onClick={sendRequest}
-                    sx={{
-                      backgroundColor: "#164f94",
-                      "&:hover": { backgroundColor: "#133a6c" },
-                    }}
-                  >
-                    Отправить запрос
-                  </CustomButton>
-                  <CustomButton
-                    variant="outlined"
-                    color="error"
-                    onClick={() => setAbsenceType(null)}
-                  >
-                    Отмена
-                  </CustomButton>
+                  <CustomButton variant="contained" color="primary" onClick={sendRequest} sx={{ backgroundColor: "#164f94", "&:hover": { backgroundColor: "#133a6c" } }}>Отправить запрос</CustomButton>
+                  <CustomButton variant="outlined" color="error" onClick={() => setAbsenceType(null)}>Отмена</CustomButton>
                 </Box>
               </Box>
             )}

@@ -39,66 +39,84 @@ function AttendanceView() {
 
   useAsync(
     getJsonWithErrorHandlerFunc,
-    setPretime,
+    (data) => {
+      console.log("📦 Ответ от API.listAllAttendance:", data);
+      if (!data || !Array.isArray(data.attendances)) {
+        console.warn("⚠️ Данные по посещениям не получены или имеют неправильный формат");
+      } else {
+        console.table(data.attendances.map(item => ({
+          ID: item.employee.id,
+          ФИО: `${item.employee.surname} ${item.employee.name}`,
+          Старт: item.start_date,
+          Конец: item.end_date,
+          Тип: item.abscence_type || "-",
+        })));
+      }
+      setPretime(data);
+    },
     [
-      (args) => API.listAllAttendance(args),
+      (args) => {
+        console.log("📤 Отправляем запрос на listAllAttendance с аргументами:", args);
+        return API.listAllAttendance(args);
+      },
       [{ from: formatDate(date), to: formatDate(addMonths(date, 1)) }],
     ],
     [date]
   );
+  
 
   useEffect(() => {
-    if (pretime === null || Object.keys(time).length !== 0) {
-      return;
-    }
-
+    if (pretime === null || Object.keys(time).length !== 0) return;
+  
+    console.log("🔄 Обрабатываем pretime:", pretime);
+  
     let emp = {};
     pretime.attendances.forEach((element) => {
       emp[element.employee.id] = element.employee;
     });
-
-    const sortedEmployees = Object.values(emp).sort((a, b) => {
-      return a.surname.localeCompare(b.surname);
-    });
+  
+    const sortedEmployees = Object.values(emp).sort((a, b) =>
+      a.surname.localeCompare(b.surname)
+    );
+    console.log("👥 Отсортированные сотрудники:", sortedEmployees);
+  
     let sortedEmpMap = {};
     sortedEmployees.forEach(emp => {
       sortedEmpMap[emp.id] = emp;
     });
     setEmployees(sortedEmpMap);
+  
     let ptime = {};
-
     sortedEmployees.forEach((element) => {
       let etime = {};
-      for (
-        let day = 1;
-        day <= getDaysInMonth(date.getMonth(), date.getFullYear());
-        day++
-      ) {
+      for (let day = 1; day <= getDaysInMonth(date.getMonth(), date.getFullYear()); day++) {
         let citem = pretime.attendances.find((item) => {
           return (
             item.employee.id === element.id &&
             new Date(Date.parse(item.start_date)).getDate() === day
           );
         });
-
-        let start = citem
-          ? new Date(Date.parse(citem["start_date"]))
-          : new Date();
-        let end = citem ? new Date(Date.parse(citem["end_date"])) : start;
-
+  
+        if (citem) {
+          console.log(`📆 ${element.surname} ${element.name} — день ${day}:`, citem);
+        }
+  
+        let start = citem ? new Date(Date.parse(citem.start_date)) : new Date();
+        let end = citem ? new Date(Date.parse(citem.end_date)) : start;
+  
         let j = {
           start: start,
           end: end,
           absense: citem?.abscence_type || (end < start ? "Н" : ""),
         };
-
+  
         etime[day] = j;
       }
-
       ptime[element.id] = etime;
     });
     setTime(ptime);
   }, [pretime, time, date]);
+  
 
   const my_id = getCachedLogin();
   const [myInfo, setMyInfo] = useState(null);

@@ -51,195 +51,179 @@ function UserEditPage({ get_id = useParams }) {
   async function onClick(event) {
     event.preventDefault();
   
-    console.log("Отправляемая должность:", job_position || "Пустая строка");
-  
-    let resdata = await API.editProfile({
-      phones: optional(phone, [phone], []),
-      email: convertNull(email),
-      birthday: convertNull(birthday),
-      telegram_id: convertNull(telegram_id),
-      vk_id: convertNull(vk_id),
-      job_position: convertNull(job_position),
-    });
-  
-    let responseText = await resdata.text();
-    console.log("Ответ от сервера (text):", responseText);
-  
-    if (!resdata.ok) {
-      console.error("Ошибка API, статус:", resdata.status);
-      alert("Ошибка при сохранении данных: " + responseText);
-      return;
-    }
-  
     try {
-      let jsonResponse = JSON.parse(responseText);
-      console.log("Парсинг JSON:", jsonResponse);
-    } catch (error) {
-      console.error("Ошибка парсинга JSON, сервер вернул:", responseText);
-    }
+
+      console.log("Сохранение профиля...");
+ 
+      if (photoData) {
+        console.log("Попытка загрузить новое фото...");
+        const uploadRes = await API.uploadPhotoProfile();
+        const uploadJson = await uploadRes.json();
+        console.log("Ответ на /upload-photo:", uploadJson);
   
-    navigate("./..");
+        if (!uploadRes.ok || !uploadJson?.url) {
+          throw new Error("Ошибка получения ссылки для загрузки фото");
+        }
+  
+        const putRes = await fetch(uploadJson.url, {
+          method: "PUT",
+          body: new Blob([photoData]),
+          headers: {
+            "Content-Type": "application/octet-stream",
+          },
+        });
+  
+        console.log("Фото отправлено, статус PUT:", putRes.status);
+  
+        if (!putRes.ok) {
+          throw new Error("Ошибка при отправке файла на S3");
+        }
+      } else {
+        console.log("Новое фото не выбрано — пропуск загрузки");
+      }
+  
+      console.log("Отправка остальных данных профиля...");
+      const resdata = await API.editProfile({
+        phones: optional(phone, [phone], []),
+        email: convertNull(email),
+        birthday: convertNull(birthday),
+        telegram_id: convertNull(telegram_id),
+        vk_id: convertNull(vk_id),
+        job_position: convertNull(job_position),
+      });
+  
+      const responseText = await resdata.text();
+      console.log("Ответ на /edit:", responseText);
+  
+      if (!resdata.ok) {
+        alert("Ошибка при сохранении данных: " + responseText);
+        return;
+      }
+  
+      console.log("Данные успешно обновлены, переход назад");
+      navigate("./..");
+  
+    } catch (err) {
+      console.error("Ошибка в процессе сохранения профиля:", err);
+      alert("Ошибка при сохранении изменений: " + err.message);
+    }
   }
   
+  const [previewUrl, setPreviewUrl] = useState(""); 
 
   const readPhoto = (e) => {
-    let files = e.target.files;
-    let reader = new FileReader();
-    reader.readAsArrayBuffer(files[0]);
-    reader.onload = (e) => {
-      setPhotoData(e.target.result);
+    let file = e.target.files[0];
+    if (!file) return;
+  
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setPhotoData(event.target.result); 
+      setPreviewUrl(URL.createObjectURL(file)); 
     };
+    reader.readAsArrayBuffer(file);
   };
+  
+  
 
   return !info ? null : (
-    <div style={{ display: "flex" }}>
+    <div className="page-container">
       <LeftPanel highlight="user" />
-      <div>
+      <div className="main-content">
         <TopPanel
           title="Настройки аккаунта"
           profpic={info.photo_link}
           username={info.name}
           showfunctions={false}
         />
-        <div className="main-content">
-          <div className="overlay-container">
-            <Image
-              className="overlay-bgimage profpic"
-              src={optional(info.photo_link)}
-              width={100}
-              height={100} 
-              roundedCircle
-            />
-            <button
-              className="overlay-fgimage image-button"
-              onClick={() => photo_input.current.click()}
-            >
-              <EditIcon style={{ color: "white" }} />
-            </button>
-            <input
-              type="file"
-              id="photo"
-              name="photo"
-              ref={photo_input}
-              className="hidden"
-              onChange={readPhoto}
-            />
-          </div>
+  
+        <div className="edit-userpage-body">
+        <div className="edit-userpage-left">
+  <div className="edit-photo-wrapper">
+    <img src={previewUrl || optional(info.photo_link)} alt="Аватар" />
+    <button
+      type="button"
+      className="edit-photo-button"
+      onClick={() => photo_input.current.click()}
+    >
+      Изменить фото
+    </button>
+    <input
+      type="file"
+      ref={photo_input}
+      className="hidden"
+      onChange={readPhoto}
+    />
+  </div>
+</div>
 
-          <form id="edit-profile-form">
-            <Container className="form-container" fluid>
-              <Row>
-                <Col className="form-col">
-                  <label className="edit-label" for="birthday">
-                    День рождения
-                  </label>
-                  <br />
-                  <input
-                    className="edit-input"
-                    type="date"
-                    id="birthday"
-                    name="birthday"
-                    defaultValue={optional(info.birthday)}
-                    onChange={(e) => setBirthday(e.target.value)}
-                  />
-                </Col>
-              </Row>
-              <Row>
-                <Col className="form-col">
-                  <label className="edit-label" for="email">
-                    Электронная почта
-                  </label>
-                  <br />
-                  <input
-                    className="edit-input"
-                    type="email"
-                    id="email"
-                    name="email"
-                    defaultValue={optional(info.email)}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </Col>
-              </Row>
-              <Row>
-                <Col className="form-col">
-                  <label className="edit-label" for="phone">
-                    Номер телефона
-                  </label>
-                  <br />
-                  <input
-                    className="edit-input"
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    pattern="\+[0-9]{1,3} [0-9]{3} [0-9]{3} [0-9]{4}"
-                    defaultValue={optional(info.phones, info.phones[0])}
-                    onChange={(e) => setPhone(e.target.value)}
-                  />
-                </Col>
-              </Row>
-              <Row>
-              <Col className="form-col">
-                  <label className="edit-label" for="job_position">
-                    Должность
-                  </label>
-                  <br />
-                  <input
-                    className="edit-input"
-                    type="text"
-                    id="job_position"
-                    name="job_position"
-                    defaultValue={optional(info.job_position)}
-                    onChange={(e) => setJobPosition(e.target.value)}
-                  />
-                </Col>
-              </Row>
-              <Row>
-                <Col className="form-col">
-                  <label className="edit-label" for="telegram_id">
-                    Telegram ID
-                  </label>
-                  <br />
-                  <input
-                    className="edit-input"
-                    type="text"
-                    id="telegram_id"
-                    name="telegram_id"
-                    defaultValue={optional(info.telegram_id)}
-                    onChange={(e) => setTelegramId(e.target.value)}
-                  />
-                </Col>
-                <Col className="form-col">
-                  <label className="edit-label" for="vk_id">
-                    VK ID
-                  </label>
-                  <br />
-                  <input
-                    className="edit-input"
-                    type="text"
-                    id="vk_id"
-                    name="vk_id"
-                    defaultValue={optional(info.vk_id)}
-                    onChange={(e) => setVkId(e.target.value)}
-                  />
-                </Col>
-              </Row>
-              <Row>
-                <Col className="form-col">
-                  <button
-                    type="submit"
-                    className="edit-save-button"
-                    onClick={onClick}
-                  >
-                    Сохранить изменения
-                  </button>
-                </Col>
-              </Row>
-            </Container>
+
+          <form className="edit-userpage-middle" onSubmit={onClick}>
+            <div className="edit-field">
+              <label className="edit-label">Электронная почта</label>
+              <input
+                className="edit-input"
+                type="email"
+                defaultValue={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div className="edit-field">
+              <label className="edit-label">Номер телефона</label>
+              <input
+                className="edit-input"
+                type="tel"
+                defaultValue={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+            </div>
+            <div className="edit-field">
+              <label className="edit-label">Telegram ID</label>
+              <input
+                className="edit-input"
+                type="text"
+                defaultValue={telegram_id}
+                onChange={(e) => setTelegramId(e.target.value)}
+              />
+            </div>
+            <div className="edit-field">
+              <label className="edit-label">VK ID</label>
+              <input
+                className="edit-input"
+                type="text"
+                defaultValue={vk_id}
+                onChange={(e) => setVkId(e.target.value)}
+              />
+            </div>
+            <div className="edit-field">
+              <label className="edit-label">День рождения</label>
+              <input
+                className="edit-input"
+                type="date"
+                defaultValue={birthday}
+                onChange={(e) => setBirthday(e.target.value)}
+              />
+            </div>
+            <div className="edit-field">
+              <label className="edit-label">Должность</label>
+              <input
+                className="edit-input"
+                type="text"
+                defaultValue={job_position}
+                onChange={(e) => setJobPosition(e.target.value)}
+              />
+            </div>
+  
+            <button className="edit-save-button" type="submit">
+              Сохранить изменения
+            </button>
           </form>
+
+          <div className="edit-userpage-right"></div>
         </div>
       </div>
     </div>
   );
+  
 }
 
 export default UserEditPage;

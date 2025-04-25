@@ -1,30 +1,14 @@
-.MuiPaper-root {
-  border-radius: 10px;
-}
-
-.doc-buttons-col {
-  display: flex;
-  flex-direction: column;
-  align-items: end;
-}
-
-.hidden {
-  display: none;
-}
-
-.typography-field {
-  margin-top: 1rem;
-  background-color: #f1f1f1;
-  padding: 10px;
-  border-radius: 4px;
-}
-
 .document {
-  padding: 16px;
-  margin-bottom: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
   background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(15, 23, 42, 0.06);
+  transition: box-shadow 0.3s ease;
+}
+
+.document:hover {
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.1);
 }
 
 .document-info-col {
@@ -32,47 +16,51 @@
 }
 
 .document-name {
-  font-size: 18px;
-  font-weight: bold;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 6px;
 }
 
 .document-description {
   font-size: 14px;
-  color: #555;
+  color: #4b5563;
+  white-space: pre-wrap;
+  margin-bottom: 12px;
+}
+
+.document-signed {
+  color: #10b981;
+  background-color: #ecfdf5;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 8px 12px;
+  width: fit-content;
 }
 
 .document-buttons-col {
   display: flex;
   flex-direction: column;
+  gap: 10px;
+  justify-content: center;
   align-items: flex-end;
 }
 
 .document-button {
-  margin-bottom: 8px;
   background-color: #164f94;
-  color: #fff;
+  color: white;
   border: none;
   padding: 8px 16px;
-  border-radius: 4px;
-  width: 150px;
+  border-radius: 6px;
+  font-size: 14px;
+  width: 160px;
+  transition: background-color 0.2s ease;
 }
 
 .document-button:hover {
   background-color: #133d73;
 }
 
-.document-signed {
-  color: green;
-  font-weight: bold;
-  margin-top: 8px;
-  background-color: #f1f1f1;
-  padding: 10px;
-  border-radius: 4px;
-  width: 150px; 
-  text-align: center; 
-}
-
-.MuiContainer-root {
-  max-height: calc(100vh - 80px); 
-  overflow-y: auto;
+.MuiPaper-root {
+  border-radius: 12px;
 }

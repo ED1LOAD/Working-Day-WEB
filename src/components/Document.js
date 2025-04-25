@@ -6,29 +6,27 @@ import { useState } from "react";
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 
-function Document(doc) {
-  const [signed, setSigned] = useState(doc.signed);
+function Document({ id, name, description, sign_required, signed: initialSigned, onForwardClick }) {
+  const [signed, setSigned] = useState(initialSigned);
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [severity, setSeverity] = useState("success");
 
   const handleClose = (event, reason) => {
-    if (reason === 'clickaway') {
-      return;
-    }
+    if (reason === 'clickaway') return;
     setOpen(false);
   };
 
   async function download() {
     let url = await getJsonWithErrorHandlerFunc(
       (args) => API.downloadDocuments(args),
-      [doc.id]
+      [id]
     );
     window.open(url.url, "_blank");
   }
 
   async function sign() {
-    let res = await API.signDocuments(doc.id);
+    let res = await API.signDocuments(id);
     if (res && res.ok) {
       setSigned(true);
       setMessage("Документ успешно подписан");
@@ -47,26 +45,30 @@ function Document(doc) {
   return (
     <Container className="document">
       <Row>
-        <Col className="document-info-col">
-          <p className="document-name">{doc.name}</p>
-          <pre className="document-description">{doc.description}</pre>
+        <Col md={8} className="document-info-col">
+          <p className="document-name">{name}</p>
+          <pre className="document-description">{description}</pre>
+          {optional(signed, <p className="document-signed">Документ подписан</p>)}
         </Col>
-        <Col className="document-buttons-col">
+        <Col md={4} className="document-buttons-col">
           <Button className="document-button" onClick={download}>
             Просмотреть
           </Button>
           {optional(
-            doc.sign_required && !signed,
+            sign_required && !signed,
             <Button className="document-button" onClick={sign}>
               Подписать
             </Button>
           )}
           {optional(
             signed,
-            <p className="document-signed">Документ подписан</p>
+            <Button className="document-button" variant="success" onClick={() => onForwardClick({ id, name, description, signed })}>
+              Отправить дальше
+            </Button>
           )}
         </Col>
       </Row>
+
       <Snackbar open={open} autoHideDuration={6000} onClose={handleClose}>
         <Alert onClose={handleClose} severity={severity} sx={{ width: '100%' }}>
           {message}

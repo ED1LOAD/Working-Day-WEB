@@ -132,6 +132,7 @@ class API {
     return await this.authFetch({
       path: "/profile/upload-photo",
       method: "POST",
+      
     });
   }
 

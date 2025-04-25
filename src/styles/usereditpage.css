@@ -13,11 +13,10 @@
 }
 
 .overlay-container {
-  position: relative;
-  display: inline-block;
-  width: 125px;
-  height: 125px; 
+  width: 180px;
+  height: 180px;
 }
+
 
 .overlay-bgimage {
   width: 100%;
@@ -109,3 +108,89 @@
 .form-col {
   padding: 0 10px;
 }
+
+.edit-userpage-body {
+  display: grid;
+  grid-template-columns: 260px 1fr 1fr;
+  gap: 48px;
+  padding: 40px 60px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.edit-userpage-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 24px;
+}
+
+.edit-photo-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.edit-photo-wrapper img {
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 4px solid #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  margin-bottom: 16px;
+}
+
+.edit-photo-button {
+  background-color: #164f94;
+  color: white;
+  font-size: 14px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.edit-photo-button:hover {
+  background-color: #123c72;
+}
+
+
+.edit-userpage-middle {
+  display: flex;
+  flex-direction: column;
+}
+
+.edit-field {
+  margin-bottom: 20px;
+}
+
+.edit-label {
+  font-size: 15px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.edit-input {
+  font-size: 15px;
+  color: #111827;
+  background-color: #f9fafb;
+  border-radius: 6px;
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.edit-input:focus {
+  border-color: #164f94;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(22, 79, 148, 0.25);
+}
+
+

@@ -1,64 +1,167 @@
+/* ==== Layout ==== */
 .calendar-layout {
   display: flex;
   height: 100vh;
+  overflow: hidden;
 }
 
 .calendar-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ==== Верхняя панель ==== */
+.top-panel {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: white;
+  padding: 16px 24px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* ==== Основной контейнер ==== */
+.notion-calendar-container {
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center; 
-  justify-content: center;
-  padding-left: 20px;
+  overflow: hidden;
+  padding: 5 24px;
+
+  font-family: 'Inter', sans-serif;
+  background-color: #f7f9fb;
 }
 
-.calendar-container {
+/* ==== Календарь (скроллится) ==== */
+.calendar-main {
+  flex: 1;
+  overflow-y: auto;
+  background: white;
+  border-radius: 0px;
+  border: 1px solid #e1e1e1;
+  padding: 12px;
+}
+
+/* ==== Легенда и счётчик ==== */
+.calendar-footer {
   display: flex;
-  justify-content: flex-start; 
+  justify-content: space-between;
   align-items: center;
-  padding: 20px;
-  margin: 20px;
-  width: auto; 
-  background-color: transparent; 
-  border: 1px solid #ccc; 
-  border-radius: 10px; 
+  padding: 16px 24px 8px 24px;
+  background-color: #f7f9fb;
+  border-top: 1px solid #e0e0e0;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.MuiBadge-badge {
-  background-color: transparent;
-}
-
-.circle-container {
+.calendar-legend {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 2px;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
-.PickersDay-root {
-  font-size: 1.5rem;
-  padding: 20px;
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #333;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  margin: 5px; 
+  display: inline-block;
 }
 
-.PickersDay-root:hover {
-  background-color: #e0e0e0;
+.worked-days-display {
+  font-weight: 500;
+  font-size: 15px;
+  color: #222;
+  font-weight: bold;
 }
 
-.MuiPickersDay-dayWithMargin {
-  margin: 0 10px; 
+/* ==== Стили событий ==== */
+.rbc-event {
+  border: none !important;
+  border-radius: 6px !important;
+  font-size: 13px;
+  padding: 4px 6px !important;
+  color: white !important;
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.info-panel {
-  width: 300px;
-  padding: 20px;
-  margin-right: 20px;
-  background-color: white;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+.rbc-calendar {
+  background: white;
+}
+
+.rbc-toolbar {
+  margin-bottom: 1rem;
+  font-size: 14px;
+  justify-content: space-between;
+  padding: 0 12px;
+}
+
+.rbc-month-view {
+  border: none;
+}
+
+.rbc-today {
+  background-color: #eef4ff !important;
+}
+
+.rbc-event.rbc-selected {
+  outline: none !important;
+  border: none !important;
+}
+
+/* ==== Лоадер ==== */
+.calendar-loading-overlay {
   position: fixed;
-  right: 20px;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 0;
+  left: 113px; 
+  width: calc(100% - 113px);
+  height: 100%;
+  background: rgba(255, 255, 255, 0.6);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner {
+  animation: rotate 1s linear infinite;
+  width: 48px;
+  height: 48px;
+}
+
+.path {
+  stroke: #1976d2;
+  stroke-linecap: round;
+  animation: dash 1.5s ease-in-out infinite;
+}
+
+@keyframes rotate {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes dash {
+  0% {
+    stroke-dasharray: 1, 150;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -35;
+  }
+  100% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -124;
+  }
 }
