@@ -53,13 +53,34 @@ function SendDocument() {
 
   function readDoc(e) {
     let files = e.target.files;
-    setDocumentName(files[0].name);
+    if (!files || files.length === 0) return;
+
+    const fileExtension = file.name.split('.').pop().toLowerCase();
+const allowedExtensions = ["pdf", "docx"];
+
+if (!allowedExtensions.includes(fileExtension)) {
+  setNotification({ open: true, message: "Можно загружать только PDF или DOCX файлы", severity: "error" });
+  return;
+}
+
+  
+    const file = files[0];
+    const allowedTypes = ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+  
+    if (!allowedTypes.includes(file.type)) {
+      setNotification({ open: true, message: "Можно загружать только PDF или DOCX файлы", severity: "error" });
+      return;
+    }
+  
+    setDocumentName(file.name);
+  
     let reader = new FileReader();
-    reader.readAsArrayBuffer(files[0]);
+    reader.readAsArrayBuffer(file);
     reader.onload = (e) => {
       setDocumentData(e.target.result);
     };
   }
+  
 
   const [needSignature, setNeedSignature] = useState(false);
 
@@ -86,16 +107,49 @@ function SendDocument() {
     setEmployees(emp);
   }, [pretime]);
 
+  async function sendDocumentsWithRetry(documentPayload, maxRetries = 10) {
+    let attempt = 0;
+    let delay = 1000; // начальная задержка 1 сек
+  
+    while (attempt <= maxRetries) {
+      try {
+        const response = await API.sendDocuments(documentPayload);
+  
+        if (response.ok) {
+          console.log(`Документ успешно отправлен на попытке ${attempt + 1}`);
+          return response;
+        } else if (response.status === 500) {
+          throw new Error("Server error 500, повторная попытка...");
+        } else {
+          console.error("Ошибка отправки документа:", response.status);
+          return response;
+        }
+      } catch (error) {
+        console.warn(`Попытка ${attempt + 1} неудачна: ${error.message}`);
+        if (attempt === maxRetries) {
+          console.error("Превышено максимальное количество попыток");
+          throw error;
+        }
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        delay *= 2; // увеличиваем задержку в 2 раза
+        attempt++;
+      }
+    }
+  }
+  
+
   async function send(e) {
     e.preventDefault();
     if (receivers.length == 0 || !documentData) {
       setNotification({ open: true, message: "Заполните все поля", severity: "warning" });
       return;
     }
+
     let upload = await getJsonWithErrorHandlerFunc(
       (args) => API.uploadDocuments(args),
       []
     );
+
     let resupload = await API.xfetch({
       path: upload.url,
       isabsolute: true,
@@ -103,19 +157,32 @@ function SendDocument() {
       body: new File([documentData], documentName),
       bodyisjson: false,
     });
-    let send = await API.sendDocuments({
-      doc_id: upload.id,
-      doc_name: name,
-      doc_sign_required: needSignature,
-      doc_description: description,
-      employee_ids: receivers,
-    });
+
+    let send;
+try {
+  send = await sendDocumentsWithRetry({
+    doc_id: upload.id,
+    doc_name: name,
+    doc_sign_required: needSignature,
+    doc_description: description,
+    employee_ids: receivers,
+  });
+} catch (error) {
+  setNotification({ open: true, message: "Не удалось отправить документ после нескольких попыток", severity: "error" });
+  return;
+}
+
+
+  
     if (resupload && send && resupload.ok && send.ok) {
+
       setNotification({ open: true, message: "Документ отправлен", severity: "success" });
     } else {
+
       setNotification({ open: true, message: "Не удалось отправить документ", severity: "error" });
     }
   }
+  
 
   const [notification, setNotification] = useState({
     open: false,

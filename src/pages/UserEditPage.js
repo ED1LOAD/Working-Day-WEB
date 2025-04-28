@@ -60,27 +60,28 @@ function UserEditPage({ get_id = useParams }) {
         const uploadRes = await API.uploadPhotoProfile();
         const uploadJson = await uploadRes.json();
         console.log("Ответ на /upload-photo:", uploadJson);
-  
+      
         if (!uploadRes.ok || !uploadJson?.url) {
           throw new Error("Ошибка получения ссылки для загрузки фото");
         }
-  
-        const putRes = await fetch(uploadJson.url, {
+      
+        const putRes = await API.xfetch({
+          path: uploadJson.url,
+          isabsolute: true,
           method: "PUT",
           body: new Blob([photoData]),
-          headers: {
-            "Content-Type": "application/octet-stream",
-          },
+          bodyisjson: false,
         });
-  
+      
         console.log("Фото отправлено, статус PUT:", putRes.status);
-  
+      
         if (!putRes.ok) {
           throw new Error("Ошибка при отправке файла на S3");
         }
       } else {
         console.log("Новое фото не выбрано — пропуск загрузки");
       }
+      
   
       console.log("Отправка остальных данных профиля...");
       const resdata = await API.editProfile({

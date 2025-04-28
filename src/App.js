@@ -27,6 +27,7 @@ import AbsenseRequest from "./pages/AbsenseRequest";
 import ExcelReader from "./pages/ExcelReader"; 
 import EmailClientSelector from "./components/TopPanel/EmailClientSelector"; 
 
+
 function App() {
   useEffect(() => {
     document.title = "Рабочий День";
@@ -53,7 +54,8 @@ function App() {
           <Route path="/user/add" element={<UserAdd />} />
           <Route path="/absense/request" element={<AbsenseRequest />} />
           <Route path="/excel" element={<ExcelReader />} />
-          <Route path="/select-email-client" element={<EmailClientSelector />} /> {/* Add the new route */}
+          <Route path="/select-email-client" element={<EmailClientSelector />} /> 
+
         </Routes>
       </BrowserRouter>
     </LocalizationProvider>

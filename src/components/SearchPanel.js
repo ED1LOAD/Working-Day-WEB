@@ -1,5 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { Drawer, Tooltip, Typography, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button as MUIButton } from "@mui/material";
+import {
+  Drawer,
+  Typography,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Button as MUIButton,
+  Popper,
+  Paper,
+  List,
+  ListItemButton,
+  ListItemText,
+  ClickAwayListener,
+  Avatar,
+} from "@mui/material";
 import { Button, Container, Form, Image, Row } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
@@ -42,16 +58,14 @@ function SearchPanel({ setOuterRequest, searchFunc }) {
   }
 
   useEffect(() => {
-    if (!info) {
-      return;
-    }
+    if (!info) return;
     document.getElementById("sp-drawer").style.height =
-      document.getElementById("search-panel-all").offsetHeight.toString() +
-      "px";
+      document.getElementById("search-panel-all").offsetHeight.toString() + "px";
   }, [info]);
 
   const [request, setRequest] = useState("");
   const [suggest, setSuggest] = useState({ employees: [] });
+  const [anchorEl, setAnchorEl] = useState(null);
 
   useAsync(
     getJsonWithErrorHandlerFunc,
@@ -64,7 +78,18 @@ function SearchPanel({ setOuterRequest, searchFunc }) {
     if (e.key === "Enter") {
       e.preventDefault();
       searchFunc(e);
+      setAnchorEl(null);
     }
+  };
+
+  const handleInputChange = (e) => {
+    setRequest(e.target.value);
+    setOuterRequest(e.target.value);
+    setAnchorEl(e.currentTarget);
+  };
+
+  const handleClickAway = () => {
+    setAnchorEl(null);
   };
 
   const buttonStyle = {
@@ -104,71 +129,77 @@ function SearchPanel({ setOuterRequest, searchFunc }) {
         >
           <div className="search-content">
             <Form onSubmit={(e) => e.preventDefault()}>
-              <div className="overlay-container-search">
-                <Tooltip
-                  open={request}
-                  title={
-                    <Container>
-                      {suggest.employees.length > 0
-                        ? suggest.employees.map((emp) => (
-                            <Row key={emp.id}>
-                              <Link
-                                className="search-suggest-link"
-                                to={"/user/" + emp.id}
-                              >
-                                <Typography variant="body2">
-                                  {emp.surname +
-                                    " " +
-                                    emp.name +
-                                    " " +
-                                    optional(emp.patronymic)}
-                                </Typography>
-                              </Link>
-                            </Row>
-                          ))
-                        : "Ничего не найдено"}
-                    </Container>
-                  }
+              <div className="overlay-container-search" style={{ position: "relative" }}>
+                <Form.Control
+                  className="overlay-bgimage-search search-field"
+                  type="text"
+                  placeholder="Поиск коллег"
+                  value={request}
+                  onChange={handleInputChange}
+                  onKeyPress={handleKeyPress}
+                />
+                <Button
+                  className="overlay-fgimage-search search-button modern-search-button"
+                  onClick={(e) => {
+                    searchFunc(e);
+                    setAnchorEl(null);
+                  }}
                 >
-                  <Form.Control
-                    className="overlay-bgimage-search search-field"
-                    type="text"
-                    placeholder="Поиск коллег"
-                    onChange={(e) => {
-                      setRequest(e.target.value);
-                      setOuterRequest(e.target.value);
-                    }}
-                    onKeyPress={handleKeyPress}
+                  <IconRender
+                    path="/images/icons/search.svg"
+                    width="16px"
+                    height="16px"
+                    iwidth="16px"
+                    iheight="16px"
+                    addstyle={{ display: "flex" }}
                   />
+                </Button>
 
-                  <Button
-                    className="overlay-fgimage-search search-button modern-search-button"
-                    onClick={(e) => searchFunc(e)}
-                  >
-                    <IconRender
-                      path="/images/icons/search.svg"
-                      width="16px"
-                      height="16px"
-                      iwidth="16px"
-                      iheight="16px"
-                      addstyle={{ display: "flex" }}
-                    />
-                  </Button>
-                </Tooltip>
+                <Popper
+  open={Boolean(request) && suggest.employees.length > 0}
+  anchorEl={anchorEl}
+  placement="bottom-start"
+  style={{ zIndex: 2, width: anchorEl?.offsetWidth }}
+>
+  <ClickAwayListener onClickAway={handleClickAway}>
+    <Paper elevation={3} sx={{ maxHeight: 250, overflowY: 'auto' }}>
+      <List>
+        {suggest.employees.map((emp) => (
+          <ListItemButton
+            key={emp.id}
+            component={Link}
+            to={`/user/${emp.id}`}
+            onClick={() => setAnchorEl(null)}
+          >
+            <Avatar
+              src={emp.photo_link || undefined}
+              sx={{ width: 32, height: 32, marginRight: 1 }}
+            >
+              {!emp.photo_link && (emp.surname ? emp.surname[0] : "?")}
+            </Avatar>
+            <ListItemText
+              primary={`${emp.surname} ${emp.name} ${optional(emp.patronymic)}`}
+            />
+          </ListItemButton>
+        ))}
+      </List>
+    </Paper>
+  </ClickAwayListener>
+</Popper>
               </div>
             </Form>
+
             {optional(
-              getCachedRole() == "admin",
+              getCachedRole() === "admin",
               <Button
-                onClick={() => {
-                  navigate("/user/add");
-                }}
+                onClick={() => navigate("/user/add")}
                 className="add-employee-button"
                 style={{ marginLeft: '10px' }}
               >
                 Добавить сотрудника
               </Button>
             )}
+
             <div className="search-controls">
               <BellIcon />
               {optional(
@@ -260,7 +291,7 @@ function SearchPanel({ setOuterRequest, searchFunc }) {
               e.target.style.color = "#164f94";
             }}
           >
-            Написать в Телеграмм
+            Написать в Телеграм
           </Button>
           <Button
             variant="outline-primary"
@@ -281,7 +312,9 @@ function SearchPanel({ setOuterRequest, searchFunc }) {
           >
             Написать на почту
           </Button>
-          <MUIButton onClick={handleClose} style={{ color: "#EA1515" }}>Закрыть</MUIButton>
+          <MUIButton onClick={handleClose} style={{ color: "#EA1515" }}>
+            Закрыть
+          </MUIButton>
         </DialogActions>
       </Dialog>
     </>
