@@ -53,6 +53,7 @@ function ViewDocuments() {
   useAsync(
     async () => {
       const result = await getJsonWithErrorHandlerFunc(() => API.listDocuments({}));
+      console.log("[DEBUG] Получено от API /v1/documents/list:", result);
       return result;
     },
     setData,
@@ -86,6 +87,35 @@ function ViewDocuments() {
     });
     setEmployees(Object.values(empMap));
   }, [pretime]);
+
+  // useEffect(() => {
+  //   async function markSignableDocuments() {
+  //     const currentUserId = getCachedLogin();
+  
+  //     const updatedDocs = await Promise.all(
+  //       (data?.documents || []).map(async (doc) => {
+  //         if (!doc.sign_required || doc.signed) return doc;
+  
+  //         try {
+  //           const res = await API.getSignsDocuments(doc.id);
+  //           const canSign = res.signs?.some(
+  //             (sign) => sign.employee?.id === currentUserId && sign.signed === false
+  //           );
+  //           return { ...doc, canSign };
+  //         } catch {
+  //           return doc;
+  //         }
+  //       })
+  //     );
+  
+  //     setData({ ...data, documents: updatedDocs });
+  //   }
+  
+  //   if (data?.documents) {
+  //     markSignableDocuments();
+  //   }
+  // }, [data]);
+  
 
   const filteredDocuments = useMemo(() => {
     if (!data?.documents) return [];
@@ -175,11 +205,15 @@ function ViewDocuments() {
           />
           {filteredDocuments.length > 0 ? (
             <Grid container spacing={3}>
-              {filteredDocuments.map((doc) => (
-                <Grid item xs={12} key={doc.id}>
-                  <Document {...doc} onForwardClick={handleForwardClick} />
-                </Grid>
-              ))}
+              {filteredDocuments.map((doc) => {
+
+
+  return (
+    <Grid item xs={12} key={doc.id}>
+      <Document {...doc} onForwardClick={handleForwardClick} />
+    </Grid>
+  );
+})}
             </Grid>
           ) : (
             <Typography variant="body1" sx={{ mt: 2, color: "text.secondary" }}>

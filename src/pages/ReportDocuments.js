@@ -208,7 +208,7 @@ function ReportDocuments() {
                                             )}
                                           </div>
                                         
-                                          <IconRender
+                                          {/* <IconRender
                                             path={
                                               sign.signed
                                                 ? "/images/icons/tick.svg"
@@ -218,7 +218,7 @@ function ReportDocuments() {
                                             height="24px"
                                             iwidth="24px"
                                             iheight="24px"
-                                          />
+                                          /> */}
                                         </Row>
                                         
 
@@ -358,7 +358,7 @@ function ReportDocuments() {
                                             )}
                                           </div>
                                         
-                                          <IconRender
+                                          {/* <IconRender
                                             path={
                                               sign.signed
                                                 ? "/images/icons/tick.svg"
@@ -368,7 +368,7 @@ function ReportDocuments() {
                                             height="24px"
                                             iwidth="24px"
                                             iheight="24px"
-                                          />
+                                          /> */}
                                         </Row>
                                          
                                         ))

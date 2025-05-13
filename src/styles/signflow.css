@@ -1,0 +1,135 @@
+.signflow-grid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px 0;
+  overflow-x: auto;
+  width: 100%;
+  position: relative;
+}
+
+
+
+.signflow-line-col {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: auto;
+  flex-shrink: 0;
+  position: static;
+}
+
+.signflow-line {
+  width: 100%;
+  height: 2px;
+  background-color: #d1d5db;
+  border-radius: 1px;
+  position: static;
+  margin-bottom: 60px;
+  animation: none;
+}
+
+.signflow-line.signed {
+  background-color: #10b981;
+  animation: none;
+}
+
+.signflow-line.current {
+  background-color: #f59e0b;
+  animation: signflow-line-pulse 1.5s infinite ease-in-out;
+}
+
+
+.signflow-avatar.signed {
+  background-color: #10b981;
+}
+
+.signflow-avatar.current {
+  background-color: #f59e0b;
+  animation: signflow-pulse 2s infinite;
+}
+
+.signflow-avatar.pending {
+  background-color: #d1d5db;
+  color: #6b7280;
+}
+
+.signflow-signer-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-width: 100px;
+  flex-shrink: 0;
+}
+
+.signflow-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  font-size: 20px;
+  font-weight: bold;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.signflow-label {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 48px; 
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-top: 4px;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.2;
+  max-width: 100px;
+}
+
+.signflow-status {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.signflow-avatar.rejected {
+  background-color: #ef4444;
+  color: white;
+}
+
+.signflow-avatar.acknowledging {
+  background-color: #d1d5db;
+  color: #6b7280;
+}
+
+.signflow-avatar.acknowledged {
+  background-color: #4caf50; 
+  color: white;
+}
+
+.signflow-status.acknowledging {
+  color: #fbbf24;
+}
+
+.signflow-status.acknowledged {
+  color: #4caf50;
+}
+
+@keyframes signflow-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6); }
+  70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+}
+
+@keyframes signflow-line-pulse {
+  0% { box-shadow: 0 0 4px rgba(245,158,11,0.5); }
+  50% { box-shadow: 0 0 10px rgba(245,158,11,1); }
+  100% { box-shadow: 0 0 4px rgba(245,158,11,0.5); }
+}

@@ -134,11 +134,7 @@ function TopPanel({ profpic, title = "Мой профиль", showfunctions = tr
           <Button
             variant="outline-primary"
             onClick={() => window.open("https://t.me/working_day_support", "_blank", "noopener noreferrer")}
-            style={{
-              borderColor: "#164f94",
-              color: "#164f94",
-              transition: "all 0.3s ease-in-out",
-            }}
+            className="support-button"
           >
             Написать в Телеграм
           </Button>
@@ -146,11 +142,7 @@ function TopPanel({ profpic, title = "Мой профиль", showfunctions = tr
           <Button
             variant="outline-primary"
             onClick={() => navigate("/select-email-client")}
-            style={{
-              borderColor: "#164f94",
-              color: "#164f94",
-              transition: "all 0.3s ease-in-out",
-            }}
+            className="support-button"
           >
             Написать на почту
           </Button>
@@ -162,11 +154,7 @@ function TopPanel({ profpic, title = "Мой профиль", showfunctions = tr
               setOpenChatBot(true); 
               setChatStarted(false); 
             }}
-            style={{
-              borderColor: "#164f94",
-              color: "#164f94",
-              transition: "all 0.3s ease-in-out",
-            }}
+            className="support-button"
           >
             Открыть чат-бота
           </Button>

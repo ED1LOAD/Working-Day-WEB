@@ -7,13 +7,21 @@ import {
   Card,
   CardContent,
   TextField,
-  styled
+  styled,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormControl,
+  OutlinedInput,
+  Snackbar,
+  Alert,
+  Dialog,
 } from "@mui/material";
 import { DatePicker, LocalizationProvider, TimePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import "dayjs/locale/ru";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import API from "../network/API";
 import formatDate from "../functions/formatDate";
 import LeftPanel from "../components/LeftPanel/LeftPanel";
@@ -21,6 +29,8 @@ import TopPanel from "../components/TopPanel/TopPanel";
 import getCachedLogin from "../functions/getCachedLogin";
 import useAsync from "../functions/hooks/useAsync";
 import getJsonWithErrorHandlerFunc from "../functions/getJsonWithErrorHandlerFunc";
+import SignFlowSend from "../components/SignFlowSendDocument"; 
+import optional from "../functions/optional";
 
 dayjs.locale("ru");
 
@@ -74,36 +84,118 @@ function AbsenceRequest() {
       setOtherDocData(e.target.result);
     };
   }
+  const [chain, setChain] = useState([]);
+  const [signatureRequirements, setSignatureRequirements] = useState({});
+  const [openChainModal, setOpenChainModal] = useState(false);
+  const [employees, setEmployees] = useState({});
+  const [notification, setNotification] = useState({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
 
+  useEffect(() => {
+    async function fetchEmployees() {
+      try {
+        const response = await getJsonWithErrorHandlerFunc(
+          (args) => API.getEmployees(args),
+          []
+        );
+        if (response && response.employees) {
+          const empMap = response.employees.reduce((acc, emp) => {
+            acc[emp.id] = emp;
+            return acc;
+          }, {});
+          setEmployees(empMap);
+        }
+      } catch (error) {
+        console.error("Ошибка при получении сотрудников:", error);
+        setNotification({
+          open: true,
+          message: "Ошибка загрузки списка сотрудников",
+          severity: "error"
+        });
+      }
+    }
+    fetchEmployees();
+  }, []);
+
+  const handleChainMetadataChange = (updatedSigners) => {
+    const newRequirements = updatedSigners.reduce((acc, signer) => {
+      acc[signer.id] = signer.requires_signature;
+      return acc;
+    }, {});
+    setSignatureRequirements(newRequirements);
+  };
+
+  const buildChainMetadata = () => {
+    return chain.map(id => ({
+      employee_id: id,
+      requires_signature: signatureRequirements[id] !== false,
+      status: 0
+    }));
+  };
   async function handleOtherSubmit() {
     if (!otherDocData || !otherTitle) {
-      alert("Заполните название и выберите документ");
+      setNotification({ open: true, message: "Заполните название и выберите документ", severity: "error" });
       return;
     }
-    const upload = await getJsonWithErrorHandlerFunc(() => API.uploadDocuments(), []);
-    await API.xfetch({
-      path: upload.url,
-      isabsolute: true,
-      method: "PUT",
-      body: new File([otherDocData], otherDocName),
-      bodyisjson: false
-    });
-    const send = await API.sendDocuments({
-      doc_id: upload.id,
-      doc_name: otherTitle,
-      doc_description: otherDescription,
-      employee_ids: [my_id],
-      doc_sign_required: true
-    });
-    if (send && send.ok) {
-      alert("Документ отправлен");
+
+    try {
+
+      const upload = await getJsonWithErrorHandlerFunc(() => API.uploadDocuments(), []);
+      await API.xfetch({
+        path: upload.url,
+        isabsolute: true,
+        method: "PUT",
+        body: new File([otherDocData], otherDocName),
+        bodyisjson: false
+      });
+
+
+      if (chain.length > 0) {
+        const currentUserId = getCachedLogin();
+    
+        const sendResponse = await API.sendDocuments({
+          doc_id: upload.id,
+          doc_name: otherTitle,
+          doc_sign_required: true,
+          doc_description: otherDescription,
+          employee_ids: [currentUserId],
+        });
+
+        if (!sendResponse.ok) throw new Error("Ошибка отправки документа");
+
+
+        const chainMetadata = buildChainMetadata();
+        const addChainRes = await API.addDocumentChain({
+          document_id: upload.id,
+          chain_metadata: chainMetadata,
+        });
+
+        if (!addChainRes.ok) throw new Error("Ошибка создания цепочки");
+      } else {
+
+        await API.sendDocuments({
+          doc_id: upload.id,
+          doc_name: otherTitle,
+          doc_description: otherDescription,
+          employee_ids: [my_id],
+          doc_sign_required: true
+        });
+      }
+
+      setNotification({ open: true, message: "Документ отправлен", severity: "success" });
+
       setAbsenceType(null);
       setOtherDocData(null);
       setOtherDocName(null);
       setOtherTitle("");
       setOtherDescription("");
-    } else {
-      alert("Не удалось отправить документ");
+      setChain([]);
+
+    } catch (error) {
+      setNotification({ open: true, message: "Ошибка отправки: " + error.message, severity: "error" });
     }
   }
 
@@ -162,61 +254,87 @@ function AbsenceRequest() {
               </Grid>
             ) : absenceType === "other" ? (
               <Box mt={4}>
-  <TextField
-    fullWidth
-    label="Название"
-    value={otherTitle}
-    onChange={(e) => setOtherTitle(e.target.value)}
-    sx={{ mt: 2 }}
-  />
-  <TextField
-    fullWidth
-    label="Описание"
-    value={otherDescription}
-    onChange={(e) => setOtherDescription(e.target.value)}
-    multiline
-    rows={4}
-    sx={{ mt: 2 }}
-  />
+                <TextField
+                  fullWidth
+                  label="Название"
+                  value={otherTitle}
+                  onChange={(e) => setOtherTitle(e.target.value)}
+                  sx={{ mt: 2 }}
+                />
+                <TextField
+                  fullWidth
+                  label="Описание"
+                  value={otherDescription}
+                  onChange={(e) => setOtherDescription(e.target.value)}
+                  multiline
+                  rows={4}
+                  sx={{ mt: 2 }}
+                />
 
-  <input
-    type="file"
-    ref={otherDocRef}
-    style={{ display: "none" }}
-    onChange={handleOtherFileChange}
-  />
+ 
+                <Box mt={3}>
+                  <MUIButton
+                    variant="outlined"
+                    onClick={() => setOpenChainModal(true)}
+                    sx={{ mb: 2 }}
+                  >
+                    {chain.length > 0 ? "Изменить цепочку согласования" : "Добавить цепочку согласования"}
+                  </MUIButton>
 
-  <Box display="flex" alignItems="center" mt={2} gap={2}>
-    <CustomButton
-      variant="outlined"
-      onClick={() => otherDocRef.current.click()}
-      sx={{ flexGrow: 1 }}
-    >
-      {otherDocName || 'Выбрать документ'}
-    </CustomButton>
-    <Typography variant="body2" color="textSecondary">
-      {otherDocName && "Файл выбран"}
-    </Typography>
-  </Box>
+                  {chain.length > 0 && (
+                    <SignFlowSend
+                      signers={chain.map(id => {
+                        const emp = employees[id];
+                        return {
+                          id,
+                          name: emp ? `${emp.name} ${emp.surname}` : `Сотрудник ${id}`,
+                          requires_signature: signatureRequirements[id] !== false,
+                          signed: false
+                        };
+                      })}
+                    />
+                  )}
+                </Box>
 
-  <Box mt={4} display="flex" justifyContent="flex-end" gap={2}>
-    <CustomButton
-      variant="contained"
-      onClick={handleOtherSubmit}
-      sx={{ backgroundColor: '#164f94', "&:hover": { backgroundColor: "#133a6c" } }}
-    >
-      Отправить
-    </CustomButton>
-    <CustomButton
-      variant="outlined"
-      color="error"
-      onClick={() => setAbsenceType(null)}
-    >
-      Отмена
-    </CustomButton>
-  </Box>
-</Box>
 
+                <input
+                  type="file"
+                  ref={otherDocRef}
+                  style={{ display: "none" }}
+                  onChange={handleOtherFileChange}
+                />
+
+                <Box display="flex" alignItems="center" mt={2} gap={2}>
+                  <CustomButton
+                    variant="outlined"
+                    onClick={() => otherDocRef.current.click()}
+                    sx={{ flexGrow: 1 }}
+                  >
+                    {otherDocName || 'Выбрать документ'}
+                  </CustomButton>
+                  <Typography variant="body2" color="textSecondary">
+                    {otherDocName && "Файл выбран"}
+                  </Typography>
+                </Box>
+
+ 
+                <Box mt={4} display="flex" justifyContent="flex-end" gap={2}>
+                  <CustomButton
+                    variant="contained"
+                    onClick={handleOtherSubmit}
+                    sx={{ backgroundColor: '#164f94', "&:hover": { backgroundColor: "#133a6c" } }}
+                  >
+                    Отправить
+                  </CustomButton>
+                  <CustomButton
+                    variant="outlined"
+                    color="error"
+                    onClick={() => setAbsenceType(null)}
+                  >
+                    Отмена
+                  </CustomButton>
+                </Box>
+              </Box>
             ) : (
               <Box mt={4}>
                 <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ru">
@@ -239,8 +357,82 @@ function AbsenceRequest() {
                 </Box>
               </Box>
             )}
+            <Dialog open={openChainModal} onClose={() => setOpenChainModal(false)} maxWidth="md" fullWidth>
+              <Box p={3}>
+                <Typography variant="h6" mb={2}>Настройка цепочки согласования</Typography>
+
+                <Box sx={{ overflowX: 'auto', px: 1 }}>
+                  <SignFlowSend
+                    signers={chain.map(id => ({
+                      id,
+                      name: employees[id] ? `${employees[id].name} ${employees[id].surname}` : `Сотрудник ${id}`,
+                      requires_signature: signatureRequirements[id] !== false,
+                      signed: false
+                    }))}
+                    editable={true}
+                    onRemove={(id) => setChain(chain.filter(uid => uid !== id))}
+                    onReorder={(newList) => setChain(newList.map(s => s.id))}
+                    onSignatureChange={handleChainMetadataChange}
+                  />
+                </Box>
+
+                <FormControl fullWidth sx={{ mt: 3 }}>
+                  <InputLabel>Добавить сотрудника</InputLabel>
+                  <Select
+  value=""
+  onChange={(e) => {
+    const selectedId = e.target.value;
+    if (!chain.includes(selectedId)) {
+      setChain([...chain, selectedId]);
+    }
+  }}
+  input={<OutlinedInput label="Добавить сотрудника" />}
+  MenuProps={{
+    PaperProps: {
+      style: {
+        maxHeight: 250,
+        overflow: 'auto', 
+      },
+    },
+  }}
+>
+  {Object.values(employees)
+    .filter((emp) => !chain.includes(emp.id))
+    .map((emp) => (
+      <MenuItem key={emp.id} value={emp.id}>
+        {emp.surname} {emp.name} {optional(emp.patronymic)}
+      </MenuItem>
+    ))}
+</Select>
+                </FormControl>
+
+                <Box display="flex" justifyContent="flex-end" gap={2} mt={4}>
+                  <MUIButton onClick={() => setOpenChainModal(false)}>Отмена</MUIButton>
+                  <MUIButton
+                    variant="contained"
+                    sx={{ backgroundColor: '#164f94', '&:hover': { backgroundColor: '#133d73' } }}
+                    onClick={() => setOpenChainModal(false)}
+                  >
+                    Сохранить
+                  </MUIButton>
+                </Box>
+              </Box>
+            </Dialog>
           </MUIContainer>
         </Box>
+        <Snackbar
+          open={notification.open}
+          autoHideDuration={6000}
+          onClose={() => setNotification({ ...notification, open: false })}
+        >
+          <Alert
+            onClose={() => setNotification({ ...notification, open: false })}
+            severity={notification.severity}
+            sx={{ width: "100%" }}
+          >
+            {notification.message}
+          </Alert>
+        </Snackbar>
       </Box>
     </Box>
   );

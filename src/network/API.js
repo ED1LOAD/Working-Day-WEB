@@ -332,10 +332,13 @@ class API {
     });
   }
 
-  static async uploadDocuments() {
+  static async uploadDocuments({extension = ".pdf"} = {}) {
     return await this.authFetch({
       path: "/documents/upload",
       method: "POST",
+      body: {
+        extension: extension,
+      }
     });
   }
 
@@ -436,7 +439,34 @@ class API {
       },
     });
   }
+  static async addDocumentChain({document_id, chain_metadata}) {
+    return await this.authFetch({
+      path: "/documents/chain/add",
+      method: "POST",
+      queries: {
+        document_id: document_id,
+      },
+      body: {
+        chain_metadata: chain_metadata,
+      },
+    });
+  }
+  
+  
 
+  static async updateDocumentChain({ document_id, approval_status }) {
+    return await this.authFetch({
+      path: "/documents/chain/update",
+      method: "POST",
+      queries: {
+        document_id: document_id,
+      },
+      body: {
+        approval_status: approval_status,
+      },
+    });
+  }
+  
   
 }
 

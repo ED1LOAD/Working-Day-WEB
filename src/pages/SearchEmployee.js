@@ -76,7 +76,7 @@ function SearchEmployee() {
   return !info ? null : (
     <Box display="flex" overflow="hidden" width="100vw" minHeight="100vh">
       <LeftPanel highlight="search" />
-      <Box flexGrow={1} bgcolor="#f7f9fc" minHeight="100vh">
+      <Box flexGrow={1} bgcolor="#ffffff" minHeight="100vh">
         <SearchPanel setOuterRequest={setRequest} searchFunc={searchFunc} />
 
         <Box px={4} py={3}>
@@ -136,7 +136,7 @@ function SearchEmployee() {
           {myEmployees.length > 0 && (
             <>
               <Typography variant="h4" sx={{ fontWeight: 700, mt: 8, mb: 4, textAlign: "center" }}>
-                Мои сотрудники
+                Коллеги
               </Typography>
               <Grid container spacing={4} justifyContent="center">
                 {myEmployees.map((emp) => (

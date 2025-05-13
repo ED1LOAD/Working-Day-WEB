@@ -12,7 +12,7 @@ import arrayInsDel from "../functions/arrayInsDel";
 import notifSort from "../functions/notifSort";
 import "../styles/notifications.css";
 
-function Notifications() {
+function Notifications({sender}) {
   const [data, setData] = useState(null);
   const [info, setInfo] = useState(null);
   useAsync(getJsonWithErrorHandlerFunc, setInfo, [
@@ -43,6 +43,7 @@ function Notifications() {
     }
     setProcessed(notifSort(notifFilter(data.notifications, showTypes)));
   }, [data, showTypes]);
+
 
   return !processed || !info ? null : (
     <Box display="flex">

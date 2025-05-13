@@ -13,7 +13,7 @@ function Notification({ id, sender, text, type, action_id, created }) {
     setIsButtonDisabled(true);
     setButtonText(approve ? { ...buttonText, approve: "Согласовано" } : { ...buttonText, reject: "Отклонено" });
     setSelectedButton(approve ? "approve" : "reject");
-    
+
     let res = await API.verdictAbsence({
       action_id: action_id,
       notification_id: id,
@@ -29,15 +29,19 @@ function Notification({ id, sender, text, type, action_id, created }) {
     }
   }
 
+  const senderName = sender ? `${sender.name} ${sender.surname} ${optional(sender.patronymic)}` : "Система";
+  const senderPhoto = sender && sender.photo_link ? sender.photo_link : "/default-avatar.png"; 
+
   return (
     <Paper elevation={3} className="notification">
       <Grid container spacing={2}>
         <Grid item>
-          <Avatar src={sender.photo_link} alt={`${sender.name} ${sender.surname}`} />
+          {/* Отображаем аватар отправителя или дефолтный */}
+          <Avatar src={senderPhoto} alt={senderName} />
         </Grid>
         <Grid item xs={8}>
           <Typography variant="subtitle1" className="notif-sender">
-            {`${sender.name} ${sender.surname} ${optional(sender.patronymic)}`}
+            {senderName}
           </Typography>
           <Typography variant="body2" className="notif-text">
             {text}

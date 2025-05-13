@@ -64,3 +64,61 @@
 .MuiPaper-root {
   border-radius: 12px;
 }
+
+.document-details-wrapper {
+  transition: height 0.4s ease;
+  overflow: hidden;
+}
+
+
+.document-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 0 8px;
+}
+
+.action-button {
+  min-width: 130px;
+  height: 42px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* .btn-outline-primary {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+.btn-outline-primary:hover {
+  background-color: #2563eb;
+  color: #fff;
+}
+
+.btn-outline-success {
+  border-color: #059669;
+  color: #059669;
+}
+.btn-outline-success:hover {
+  background-color: #059669;
+  color: #fff;
+}
+
+.btn-outline-danger {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+.btn-outline-danger:hover {
+  background-color: #dc2626;
+  color: #fff;
+} */
+
+.document-timestamp {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: -6px;
+  margin-bottom: 4px;
+}
+  
